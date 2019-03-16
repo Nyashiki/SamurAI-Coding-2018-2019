@@ -1,0 +1,12 @@
+*.o
+samurai-coding
+runtest
+
+# Editor
+.vscode/
+
+# tools
+tools/results/*
+
+# .gitkeep
+!.gitkeep

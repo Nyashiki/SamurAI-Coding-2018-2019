@@ -1,0 +1,78 @@
+image: ubuntu:bionic
+
+before_script:
+  - apt-get -qq update
+  - apt-get -qq install -y g++ make cmake git python3 python3-pip zip unzip
+  - apt-get -qq install libboost-all-dev
+  - git clone -q https://github.com/google/googletest.git /googletest
+  - mkdir -p /googletest/build
+  - cd /googletest/build
+  - cmake .. && make && make install
+  - cd /builds/tnakayashiki01/samurai-coding/
+  - git clone https://github.com/takashi-chikayama/software-for-SamurAI-Coding-2018-19 ./judge
+  - pip3 install matplotlib futures
+
+build:
+  stage: build
+  script:
+    - cd /builds/tnakayashiki01/samurai-coding/src/
+    - make debug
+
+build_test:
+  stage: build
+  script:
+    - cd /builds/tnakayashiki01/samurai-coding/src/
+    - make test
+
+build_judge:
+  stage: build
+  script:
+    - cd /builds/tnakayashiki01/samurai-coding/judge/
+    - make
+
+test:
+  stage: test
+  script:
+    - cd /builds/tnakayashiki01/samurai-coding/src/
+    - make runtest
+
+judge_run_greedy:
+  stage: test
+  script:
+    - cd /builds/tnakayashiki01/samurai-coding/judge/
+    - make
+    - official/official samples/sample.crs player/greedy Mary player/greedy John
+
+judge_run:
+  stage: test
+  script:
+    - cd /builds/tnakayashiki01/samurai-coding/src/
+    - make release
+    - cd ../judge/
+    - make
+    - official/official samples/sample.crs ../src/samurai-coding OurAgent player/greedy John
+
+statistics:
+  stage: test
+  script:
+    - cd /builds/tnakayashiki01/samurai-coding/
+    - cd src && make release && cd ../judge && make && cd samples && unzip 100-sample-courses.zip && cd ../../
+    - python3 ./tools/statistics.py ./src/samurai-coding ./judge/player/greedy ./judge/samples/courses/
+  artifacts:
+    paths:
+      - /builds/tnakayashiki01/samurai-coding/result.png
+    expire_in:
+      3 day
+
+submit:
+  stage: deploy
+  script:
+    - cd /builds/tnakayashiki01/samurai-coding/
+    - mkdir submit
+    - cp -r ./src/ ./compile.sh ./run.sh submit/
+    - zip -o submit.zip submit/ -r
+  artifacts:
+    paths:
+      - ./submit.zip
+    expire_in:
+      3 day
